@@ -1,6 +1,19 @@
 #! /usr/bin/env python
 
-if 1:
+import time
+
+# generic ros libraries
+import rclpy
+from rclpy.logging import get_logger
+
+# moveit python library
+from moveit.core.robot_state import RobotState
+from moveit.planning import (
+    MoveItPy,
+    MultiPipelinePlanRequestParameters,
+)
+
+if 0:
 	import rospy
 	import sys
 	import copy
@@ -11,10 +24,20 @@ if 1:
 	import math
 	import actionlib
 
-def main():
+def main(args=None):
+    rclpy.init(args=args)
     print('Hi from my_demo.')
+    ###################################################################
+    # MoveItPy Setup
+    ###################################################################
+    logger = get_logger("moveit_py.pose_goal")
+
+
+
+    # instantiate MoveItPy instance and get planning component
+    panda = MoveItPy(node_name="my_demo")
+    
     if 0:
-        rospy.init_node('test')
 
         moveit_commander.roscpp_initialize(sys.argv)
         robot=moveit_commander.RobotCommander()

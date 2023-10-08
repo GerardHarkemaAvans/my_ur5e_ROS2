@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'my_demo'
+package_name = 'my_demo_python'
 
 setup(
     name=package_name,

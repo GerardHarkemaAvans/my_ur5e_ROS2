@@ -18,7 +18,7 @@ int main(int argc, char ** argv)
     (void) argc;
     (void) argv;
 
-    printf("hello world my_demo_cpp package\n");
+    printf("My Demo CPP\n");
 
     rclcpp::init(argc, argv);
     rclcpp::NodeOptions node_options;
@@ -46,7 +46,6 @@ int main(int argc, char ** argv)
 
     std::map<std::string, double> target = move_group.getNamedTargetValues("home");
     
-    move_group.setJointValueTarget(target);
 
 
   // We will use the
@@ -54,19 +53,48 @@ int main(int argc, char ** argv)
   // class to add and remove collision objects in our "virtual world" scene
 //  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
 
+    moveit_msgs::msg::Constraints constraints;
+    std::map<std::string, double>::iterator it = target.begin();
+    while(it != target.end())
+    {
+        moveit_msgs::msg::JointConstraint joint_constraint;
 
-  moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+        std::cout<<it->first<<" = "<<it->second<<std::endl;
+        // Constrain the position of a joint to be within a certain bound
+        joint_constraint.joint_name = it->first;
 
-#if 1
-//  move_group->move();
+        // the bound to be achieved is [position - tolerance_below, position + tolerance_above]
+        joint_constraint.position = it->second;
+        joint_constraint.tolerance_above = 0.1;
+        joint_constraint.tolerance_below = 0.1;
 
-  bool succes = (move_group->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+        // A weighting factor for this constraint (denotes relative importance to other constraints. Closer to zero means less important)
+        joint_constraint.weight = 1.0;
+
+        constraints.joint_constraints.push_back(joint_constraint);
+
+        it++;
+    }
+
+
+    move_group.setJointValueTarget(target);
+    move_group.setPlanningTime(10.0);
+
+    move_group.setPathConstraints(constraints);
+
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+
+
+  move_group.move();
+
+    bool succes = (move_group.plan(my_plan) == moveit::core::MoveItErrorCode::SUCCESS);
     if (succes)
     {
-    move_group->execute(my_plan);
-    //move_group->asyncExecute(my_plan);
+        printf("Execute\n");
+        move_group.execute(my_plan);
+        //move_group->asyncExecute(my_plan);
     }
-#endif
+
 
 
 

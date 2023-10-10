@@ -43,7 +43,6 @@ from launch.substitutions import Command, FindExecutable, LaunchConfiguration, P
 
 def launch_setup(context, *args, **kwargs):
     # Initialize Arguments
-    ur_type = LaunchConfiguration("ur_type")
     use_mock_hardware = LaunchConfiguration("use_mock_hardware")
     safety_limits = LaunchConfiguration("safety_limits")
     safety_pos_margin = LaunchConfiguration("safety_pos_margin")
@@ -61,17 +60,17 @@ def launch_setup(context, *args, **kwargs):
     launch_servo = LaunchConfiguration("launch_servo")
 
     joint_limit_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config", ur_type, "joint_limits.yaml"]
+        [FindPackageShare(description_package), "config",  "joint_limits.yaml"]
     )
     kinematics_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config", ur_type, "default_kinematics.yaml"]
+        [FindPackageShare(description_package), "config",  "default_kinematics.yaml"]
     )
     physical_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config", ur_type, "physical_parameters.yaml"]
+        [FindPackageShare(description_package), "config",  "physical_parameters.yaml"]
     )
-    visual_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config", ur_type, "visual_parameters.yaml"]
-    )
+    #removed by gerard visual_params = PathJoinSubstitution(
+    #    [FindPackageShare(description_package), "config",  "visual_parameters.yaml"]
+    #)
 
     robot_description_content = Command(
         [
@@ -90,8 +89,8 @@ def launch_setup(context, *args, **kwargs):
             "physical_params:=",
             physical_params,
             " ",
-            "visual_params:=",
-            visual_params,
+            # Removed by gerard "visual_params:=",
+            #visual_params,
             " ",
             "safety_limits:=",
             safety_limits,
@@ -105,8 +104,6 @@ def launch_setup(context, *args, **kwargs):
             "name:=",
             "ur",
             " ",
-            "ur_type:=",
-            ur_type,
             " ",
             "script_filename:=ros_control.urscript",
             " ",
@@ -127,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare(moveit_config_package), "srdf", moveit_config_file]
+                [FindPackageShare(moveit_config_package), "config", moveit_config_file]
             ),
             " ",
             "name:=",
@@ -161,11 +158,11 @@ def launch_setup(context, *args, **kwargs):
             "start_state_max_bounds_error": 0.1,
         }
     }
-    ompl_planning_yaml = load_yaml("ur_moveit_config", "config/ompl_planning.yaml")
+    ompl_planning_yaml = load_yaml("my_ur5e_moveit_config", "config/ompl_planning.yaml")
     ompl_planning_pipeline_config["move_group"].update(ompl_planning_yaml)
 
     # Trajectory Execution Configuration
-    controllers_yaml = load_yaml("ur_moveit_config", "config/controllers.yaml")
+    controllers_yaml = load_yaml("my_ur5e_moveit_config", "config/controllers.yaml")
     # the scaled_joint_trajectory_controller does not work on mock hardware
     change_controllers = context.perform_substitution(use_mock_hardware)
     if change_controllers == "true":
@@ -217,7 +214,8 @@ def launch_setup(context, *args, **kwargs):
 
     # rviz with moveit configuration
     rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare(moveit_config_package), "rviz", "view_robot.rviz"]
+       #[FindPackageShare(moveit_config_package), "rviz", "rviz_config.rviz"]
+       ["..", "rviz", "rviz_config.rviz"]
     )
     rviz_node = Node(
         package="rviz2",
@@ -237,7 +235,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Servo node for realtime control
-    servo_yaml = load_yaml("ur_moveit_config", "config/ur_servo.yaml")
+    servo_yaml = load_yaml("my_ur5e_moveit_config", "config/ur_servo.yaml")
     servo_params = {"moveit_servo": servo_yaml}
     servo_node = Node(
         package="moveit_servo",
@@ -259,13 +257,6 @@ def launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     declared_arguments = []
     # UR specific arguments
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "ur_type",
-            description="Type/series of used UR robot.",
-            choices=["ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20"],
-        )
-    )
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_mock_hardware",
@@ -298,7 +289,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_package",
-            default_value="ur_description",
+            default_value="my_ur5e_description",
             description="Description package with robot URDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom description.",
         )
@@ -313,7 +304,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "moveit_config_package",
-            default_value="ur_moveit_config",
+            default_value="my_ur5e_moveit_config",
             description="MoveIt config package with robot SRDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom moveit config.",
         )
@@ -321,7 +312,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "moveit_config_file",
-            default_value="ur.srdf.xacro",
+            default_value="my_ur5e.urdf.xacro",
             description="MoveIt SRDF/XACRO description file with the robot.",
         )
     )
@@ -359,7 +350,7 @@ def generate_launch_description():
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
     )
     declared_arguments.append(
-        DeclareLaunchArgument("launch_servo", default_value="true", description="Launch Servo?")
+        DeclareLaunchArgument("launch_servo", default_value="false", description="Launch Servo?")#changed to false by gerard
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

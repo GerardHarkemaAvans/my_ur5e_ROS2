@@ -43,6 +43,7 @@ from launch.substitutions import Command, FindExecutable, LaunchConfiguration, P
 
 def launch_setup(context, *args, **kwargs):
     # Initialize Arguments
+    ur_type = LaunchConfiguration("ur_type")
     use_mock_hardware = LaunchConfiguration("use_mock_hardware")
     safety_limits = LaunchConfiguration("safety_limits")
     safety_pos_margin = LaunchConfiguration("safety_pos_margin")
@@ -52,26 +53,31 @@ def launch_setup(context, *args, **kwargs):
     description_file = LaunchConfiguration("description_file")
     moveit_config_package = LaunchConfiguration("moveit_config_package")
     moveit_joint_limits_file = LaunchConfiguration("moveit_joint_limits_file")
+    moveit_kinematics_file = LaunchConfiguration("moveit_kinematics_file")
     moveit_config_file = LaunchConfiguration("moveit_config_file")
     warehouse_sqlite_path = LaunchConfiguration("warehouse_sqlite_path")
     prefix = LaunchConfiguration("prefix")
     use_sim_time = LaunchConfiguration("use_sim_time")
     launch_rviz = LaunchConfiguration("launch_rviz")
     launch_servo = LaunchConfiguration("launch_servo")
+    ur_description_package = LaunchConfiguration("ur_description_package")
 
+    '''
     joint_limit_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config",  "joint_limits.yaml"]
+        [FindPackageShare(ur_description_package), "config", ur_type, "joint_limits.yaml"]
     )
     kinematics_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config",  "default_kinematics.yaml"]
+        [FindPackageShare(ur_description_package), "config", ur_type, "default_kinematics.yaml"]
     )
     physical_params = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config",  "physical_parameters.yaml"]
+        [FindPackageShare(ur_description_package), "config", ur_type, "physical_parameters.yaml"]
     )
-    #removed by gerard visual_params = PathJoinSubstitution(
-    #    [FindPackageShare(description_package), "config",  "visual_parameters.yaml"]
-    #)
+    visual_params = PathJoinSubstitution(
+        [FindPackageShare(ur_description_package), "config", ur_type, "visual_parameters.yaml"]
+    )
+    '''
 
+    '''
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -89,8 +95,8 @@ def launch_setup(context, *args, **kwargs):
             "physical_params:=",
             physical_params,
             " ",
-            # Removed by gerard "visual_params:=",
-            #visual_params,
+            "visual_params:=",
+            visual_params,
             " ",
             "safety_limits:=",
             safety_limits,
@@ -104,6 +110,8 @@ def launch_setup(context, *args, **kwargs):
             "name:=",
             "ur",
             " ",
+            "ur_type:=",
+            ur_type,
             " ",
             "script_filename:=ros_control.urscript",
             " ",
@@ -116,32 +124,44 @@ def launch_setup(context, *args, **kwargs):
             " ",
         ]
     )
-    robot_description = {"robot_description": robot_description_content}
-
-    # MoveIt Configuration
-    robot_description_semantic_content = Command(
+    '''
+    robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution(
-                [FindPackageShare(moveit_config_package), "config", moveit_config_file]
-            ),
-            " ",
-            "name:=",
-            # Also ur_type parameter could be used but then the planning group names in yaml
-            # configs has to be updated!
-            "ur",
-            " ",
-            "prefix:=",
-            prefix,
+            PathJoinSubstitution([FindPackageShare(description_package), "urdf", description_file]),
             " ",
         ]
     )
+    robot_description = {"robot_description": robot_description_content}
+
+
+    # MoveIt Configuration
+    if 0:
+        pathje = str(moveit_config_package.perform(context))
+        print(".......1")
+        print(pathje)
+        path = str(PathJoinSubstitution([pathje, "config", str(moveit_config_file.perform(context))])) # onduidelijk waarom deze fout gaat
+        print(".......2")
+        print(path) 
+    path = "/home/gerard/my_ur_ws/src/my_ur5e_ROS2/my_ur5e_moveit_config/config/my_ur5e.srdf.xacro" # deze vervangt bovenstaande regel
+    #print(".......3")
+    #print(path) 
+    with open(path, 'r') as f:
+        robot_description_semantic_content = f.read()
+    #robot_description_semantic_content = xacro(path)
+    #robot_description_semantic_content = load_file("my_ur5e_moveit_config", "config/my_ur5e.srdf")
+
+
     robot_description_semantic = {"robot_description_semantic": robot_description_semantic_content}
 
-    robot_description_kinematics = PathJoinSubstitution(
-        [FindPackageShare(moveit_config_package), "config", "kinematics.yaml"]
-    )
+    
+    robot_description_kinematics = {
+        "robot_kinematics": load_yaml(
+            str(moveit_config_package.perform(context)),
+            os.path.join("config", str(moveit_kinematics_file.perform(context))),
+        )
+    }
 
     robot_description_planning = {
         "robot_description_planning": load_yaml(
@@ -194,6 +214,7 @@ def launch_setup(context, *args, **kwargs):
     }
 
     # Start the actual move_group node/action server
+    print(robot_description)
     move_group_node = Node(
         package="moveit_ros_move_group",
         executable="move_group",
@@ -208,14 +229,13 @@ def launch_setup(context, *args, **kwargs):
             moveit_controllers,
             planning_scene_monitor_parameters,
             {"use_sim_time": use_sim_time},
-            warehouse_ros_config,
+            #warehouse_ros_config,
         ],
     )
 
     # rviz with moveit configuration
     rviz_config_file = PathJoinSubstitution(
-       #[FindPackageShare(moveit_config_package), "rviz", "rviz_config.rviz"]
-       ["..", "rviz", "rviz_config.rviz"]
+        [FindPackageShare("my_ur5e_bringup"), "rviz", "r.rviz"]
     )
     rviz_node = Node(
         package="rviz2",
@@ -230,12 +250,12 @@ def launch_setup(context, *args, **kwargs):
             ompl_planning_pipeline_config,
             robot_description_kinematics,
             robot_description_planning,
-            warehouse_ros_config,
+            #warehouse_ros_config,
         ],
     )
 
     # Servo node for realtime control
-    servo_yaml = load_yaml("my_ur5e_moveit_config", "config/ur_servo.yaml")
+    servo_yaml = load_yaml("ur_moveit_config", "config/ur_servo.yaml")
     servo_params = {"moveit_servo": servo_yaml}
     servo_node = Node(
         package="moveit_servo",
@@ -249,14 +269,21 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
     )
 
-    nodes_to_start = [move_group_node, rviz_node, servo_node]
-
+    nodes_to_start = [move_group_node, rviz_node]#, servo_node]
+    
     return nodes_to_start
 
 
 def generate_launch_description():
     declared_arguments = []
     # UR specific arguments
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ur_type",
+            default_value="ur5e",
+            choices=["ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20"],
+        )
+    )
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_mock_hardware",
@@ -312,7 +339,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "moveit_config_file",
-            default_value="my_ur5e.urdf.xacro",
+            default_value="my_ur5e.srdf",
             description="MoveIt SRDF/XACRO description file with the robot.",
         )
     )
@@ -321,6 +348,14 @@ def generate_launch_description():
             "moveit_joint_limits_file",
             default_value="joint_limits.yaml",
             description="MoveIt joint limits that augment or override the values from the URDF robot_description.",
+        )
+    )
+    # added by gerard
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "moveit_kinematics_file",
+            default_value="kinematics.yaml",
+            description="MoveIt kinematics.",
         )
     )
     declared_arguments.append(
@@ -350,7 +385,17 @@ def generate_launch_description():
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
     )
     declared_arguments.append(
-        DeclareLaunchArgument("launch_servo", default_value="false", description="Launch Servo?")#changed to false by gerard
+        DeclareLaunchArgument("launch_servo", default_value="true", description="Launch Servo?")
+    )
+    
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ur_description_package",
+            default_value="ur_description",
+            description="Description package with robot URDF/XACRO files. Usually the argument \
+        is not set, it enables use of a custom description.",
+        )
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+

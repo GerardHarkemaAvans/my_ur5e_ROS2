@@ -144,7 +144,7 @@ def launch_setup(context, *args, **kwargs):
         path = str(PathJoinSubstitution([pathje, "config", str(moveit_config_file.perform(context))])) # onduidelijk waarom deze fout gaat
         print(".......2")
         print(path) 
-    path = "/home/gerard/my_ur_ws/src/my_ur5e_ROS2/my_ur5e_moveit_config/config/my_ur5e.srdf.xacro" # deze vervangt bovenstaande regel
+    path = "/home/gerard/my_ur_ws/src/my_ur5e_ROS2/my_ur5e_moveit_config/config/my_ur5e.srdf" # deze vervangt bovenstaande regel
     #print(".......3")
     #print(path) 
     with open(path, 'r') as f:
@@ -226,15 +226,11 @@ def launch_setup(context, *args, **kwargs):
             robot_description_planning,
             ompl_planning_pipeline_config,
             trajectory_execution,
-            moveit_controllers,
             planning_scene_monitor_parameters,
             {"use_sim_time": use_sim_time},
             #warehouse_ros_config,
         ],
     )
-
-
-
 
     nodes_to_start = [demo_node]
     

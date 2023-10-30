@@ -60,7 +60,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration("use_sim_time")
     launch_rviz = LaunchConfiguration("launch_rviz")
     launch_servo = LaunchConfiguration("launch_servo")
-    ur_description_package = LaunchConfiguration("ur_description_package")
+    ur_description_package = LaunchConfiguration("my_ur5e_description_package")
 
     '''
     joint_limit_params = PathJoinSubstitution(
@@ -142,15 +142,15 @@ def launch_setup(context, *args, **kwargs):
         print(".......1")
         print(pathje)
         path = str(PathJoinSubstitution([pathje, "config", str(moveit_config_file.perform(context))])) # onduidelijk waarom deze fout gaat
+        path = PathJoinSubstitution([FindPackageShare(description_package), "urdf", description_file])
         print(".......2")
         print(path) 
-    path = "/home/gerard/my_ur_ws/src/my_ur5e_ROS2/my_ur5e_moveit_config/config/my_ur5e.srdf.xacro" # deze vervangt bovenstaande regel
+    path = "/home/gerard/my_ur_ws/src/my_ur5e_ROS2/my_ur5e_moveit_config/config/my_ur5e.srdf" # deze vervangt bovenstaande regel
     #print(".......3")
     #print(path) 
+    pass
     with open(path, 'r') as f:
         robot_description_semantic_content = f.read()
-    #robot_description_semantic_content = xacro(path)
-    #robot_description_semantic_content = load_file("my_ur5e_moveit_config", "config/my_ur5e.srdf")
 
 
     robot_description_semantic = {"robot_description_semantic": robot_description_semantic_content}
@@ -235,7 +235,7 @@ def launch_setup(context, *args, **kwargs):
 
     # rviz with moveit configuration
     rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("my_ur5e_bringup"), "rviz", "r.rviz"]
+        [FindPackageShare("my_ur5e_bringup"), "rviz", "rviz_config.rviz"]
     )
     rviz_node = Node(
         package="rviz2",

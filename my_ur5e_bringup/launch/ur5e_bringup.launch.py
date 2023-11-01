@@ -100,7 +100,7 @@ def generate_launch_description():
     base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([FindPackageShare("ur_robot_driver"), "/launch", "/ur_control.launch.py"]),
         launch_arguments={
-            "ur_type": "ur5e",
+            "ur_type": "ur3",
             "robot_ip": robot_ip,
             "use_mock_hardware": use_mock_hardware,
             "mock_sensor_commands": mock_sensor_commands,

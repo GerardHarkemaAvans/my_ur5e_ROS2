@@ -138,7 +138,7 @@ while getopts ":hm:v:p:u:d" option; do
     u) # urcaps_folder
       URCAP_STORAGE=${OPTARG}
       ;;
-    d) # detached mode
+    d) # detached modeURCAP_STORAGE
       DETACHED=true
       ;;
     \?) # invalid option

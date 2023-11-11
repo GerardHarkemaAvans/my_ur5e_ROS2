@@ -40,6 +40,9 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 
 def launch_setup(context, *args, **kwargs):
     # Initialize Arguments
@@ -137,19 +140,9 @@ def launch_setup(context, *args, **kwargs):
 
 
     # MoveIt Configuration
-    if 0:
-        pathje = str(moveit_config_package.perform(context))
-        print(".......1")
-        print(pathje)
-        path = str(PathJoinSubstitution([pathje, "config", str(moveit_config_file.perform(context))])) # onduidelijk waarom deze fout gaat
-        path = PathJoinSubstitution([FindPackageShare(description_package), "urdf", description_file])
-        print(".......2")
-        print(path) 
-    path = "/home/gerard/my_ur_ws/src/my_ur5e_ROS2/my_ur5e_moveit_config/config/my_ur5e.srdf" # deze vervangt bovenstaande regel
-    #print(".......3")
-    #print(path) 
-    pass
-    with open(path, 'r') as f:
+    path_srdf =  os.path.join(get_package_share_directory('my_ur5e_moveit_config'), "config/my_ur5e.srdf")
+
+    with open(path_srdf, 'r') as f:
         robot_description_semantic_content = f.read()
 
 
@@ -269,7 +262,15 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
     )
 
-    nodes_to_start = [move_group_node, rviz_node]#, servo_node]
+    robot_description_node = IncludeLaunchDescription(
+      PythonLaunchDescriptionSource([os.path.join(
+         get_package_share_directory('my_ur5e_bringup'), 'launch'),
+         '/load_robot_description.launch.py']),
+          launch_arguments={'ur_type': 'ur3'}.items()
+      )
+
+    nodes_to_start = [move_group_node, rviz_node, robot_description_node]#, servo_node]
+
     
     return nodes_to_start
 
